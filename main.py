@@ -706,15 +706,43 @@ async def txt_handler(bot: Client, m: Message):
     arg = int(raw_text)
     try:
         for i in range(arg-1, len(links)):
-            Vxy = links[i][1].replace("file/d/","uc?export=download&id=").replace("www.youtube-nocookie.com/embed", "youtu.be").replace("?modestbranding=1", "").replace("/view?usp=sharing","")
-            url = "https://" + Vxy
-            link0 = "https://" + Vxy
-
-            name1 = links[i][0].replace("(", "[").replace(")", "]").replace("_", "").replace("\t", "").replace(":", "").replace("/", "").replace("+", "").replace("#", "").replace("|", "").replace("@", "").replace("*", "").replace(".", "").replace("https", "").replace("http", "").strip()
-            if "," in raw_text3:
-                 name = f'{PRENAME} {name1[:60]}'
+            # URL processing
+            Vxy = links[i][1].replace("file/d/", "uc?export=download&id=").replace("www.youtube-nocookie.com/embed", "youtu.be").replace("?modestbranding=1", "").replace("/view?usp=sharing", "")
+            # URL processing
+            if not Vxy.startswith("https://"):
+                url = "https://" + Vxy
             else:
-                 name = f'{name1[:60]}'
+                url = Vxy
+
+            # Title processing
+            title = links[i][0]
+            raw_text97 = ""
+            name1 = ""
+            raw_text65 = ""
+
+            # Check for both delimiters and the correct format
+            if "🌚" in title and "💀" in title:
+                try:
+                    # Split on 🌚 to isolate raw_text97 and the rest
+                    parts = title.split("🌚")
+                    if len(parts) >= 3:
+                        raw_text97 = parts[1].strip()  # Extract raw_text97
+                        # Split the remaining part on 💀 to get name1 and raw_text65
+                        remaining = parts[2].split("💀")
+                        if len(remaining) >= 3:
+                            name1 = remaining[0].strip()  # Extract name1
+                            raw_text65 = remaining[1].strip()  # Extract raw_text65
+                        else:
+                            name1 = remaining[0].strip() if remaining else title.strip()
+                except IndexError:
+                    # Fallback in case of malformed title
+                    name1 = title.strip()
+            else:
+                # Fallback if delimiters are missing
+                name1 = title.strip()
+
+            cleaned_name1 = name1.replace("(", "[").replace(")", "]").replace("_", "").replace("\t", "").replace(":", "").replace("/", "").replace("+", "").replace("#", "").replace("|", "").replace("@", "").replace("*", "").replace(".", "").replace("https", "").replace("http", "").strip()
+            name = f'[𝗛𝗔𝗖𝗞𝗛𝗘𝗜𝗦𝗧😈]{cleaned_name1[:60]}'
             
             if "visionias" in url:
                 async with ClientSession() as session:
@@ -803,8 +831,32 @@ async def txt_handler(bot: Client, m: Message):
                 response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
                 url   = response.json()['url']
 
-            elif "childId" in url and "parentId" in url:
-                url = f"https://anonymouspwplayer-0e5a3f512dec.herokuapp.com/pw?url={url}&token={raw_text4}"
+            elif "studystark.site" in url:
+                try:
+                    response = requests.get(url)
+                    response.raise_for_status()  # Raises an error for bad status codes
+                    data = response.json()
+                    video_url = data.get("video_url", "")
+                    print(f"Original video_url: {video_url}")  # Debugging
+                    if video_url:
+                        # Ensure video_url ends with master.mpd or handle other formats
+                        if video_url.endswith("master.mpd"):
+                            url = video_url.replace("master.mpd", f"hls/{raw_text97}/main.m3u8")
+                        else:
+                            # Handle cases where video_url doesn't end with master.mpd
+                            # Append hls/[raw_text97]/main.m3u8 to the base URL
+                            base_url = video_url.rsplit("/", 1)[0]  # Remove any trailing segment
+                            url = f"{base_url}/hls/{raw_text97}/main.m3u8"
+                        print(f"Final URL: {url}")  # Debugging
+                    else:
+                        print("Error: video_url is empty")
+                        url = ""  # Handle empty video_url
+                except requests.RequestException as e:
+                    print(f"Error fetching URL: {e}")
+                    url = ""  # Fallback to empty string
+                except ValueError as e:
+                    print(f"Error parsing JSON: {e}")
+                    url = ""  # Fallback to empty string
 
             if "edge.api.brightcove.com" in url:
                 bcov = f'bcov_auth={cwtoken}'
@@ -839,16 +891,15 @@ async def txt_handler(bot: Client, m: Message):
 
             try:
                 cc = (
-    f"<b>🏷️ Iɴᴅᴇx ID  :</b> {str(count).zfill(3)}\n\n"
-    f"<b>🎞️  Tɪᴛʟᴇ :</b> {name1} \n\n"
-    f"<blockquote>📚  𝗕ᴀᴛᴄʜ : {b_name}</blockquote>"
-    f"\n\n<b>🎓  Uᴘʟᴏᴀᴅ Bʏ : {CR}</b>"
+    f"<b>|🇮🇳| {cleaned_name1}</b>\n\n"
+    f"<b>😎 ℚ𝕦𝕒𝕝𝕚𝕥𝕪 ➠ {raw_text97}p</b>\n\n"
+    f"<b>🧿 𝐁𝐀𝐓𝐂𝐇 ➤ {b_name}</b>\n\n"
+    f"<b>ChapterId > {raw_text65}</b>"
 )
                 cc1 = (
-    f"<b>🏷️ Iɴᴅᴇx ID :</b> {str(count).zfill(3)}\n\n"
-    f"<b>📑  Tɪᴛʟᴇ :</b> {name1} \n\n"
-    f"<blockquote>📚  𝗕ᴀᴛᴄʜ : {b_name}</blockquote>"
-    f"\n\n<b>🎓  Uᴘʟᴏᴀᴅ Bʏ : {CR}</b>"
+    f"<b>|🇮🇳| {cleaned_name1}</b>\n\n"
+    f"<b>🧿 𝐁𝐀𝐓𝐂𝐇 ➤ {b_name}</b>\n\n"
+    f"<b>ChapterId > {raw_text65}</b>"
 )
                 cczip = f'[📁]Zip Id : {str(count).zfill(3)}\n**Zip Title :** `{name1} .zip`\n<blockquote><b>Batch Name :</b> {b_name}</blockquote>\n\n**Extracted by➤**{CR}\n' 
                 ccimg = (
@@ -1008,10 +1059,11 @@ async def txt_handler(bot: Client, m: Message):
                     time.sleep(1)
                 
             except Exception as e:
-                await bot.send_message(channel_id, f'⚠️**Downloading Failed**⚠️\n**Name** =>> `{str(count).zfill(3)} {name1}`\n**Url** =>> {link0}\n\n<blockquote><i><b>Failed Reason: {str(e)}</b></i></blockquote>', disable_web_page_preview=True)
+                await m.reply_text(f'⚠️**Downloading Failed**⚠️\n**ID** =>> `{str(count).zfill(3)}`\n\n**Name** - `{name1}`**', disable_web_page_preview=True)
                 count += 1
                 failed_count += 1
                 continue
+
 
     except Exception as e:
         await m.reply_text(e)
