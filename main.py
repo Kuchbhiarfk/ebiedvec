@@ -284,7 +284,7 @@ async def getcookies_handler(client: Client, m: Message):
     except Exception as e:
         await m.reply_text(f"⚠️ An error occurred: {str(e)}")
 
-@bot.on_message(filters.command(["stop"]) )
+@bot.on_message(filters.command(["stop"]) & (filters.private | filters.channel))
 async def restart_handler(_, m):
     
     await m.reply_text("🚦**STOPPED**", True)
@@ -414,7 +414,7 @@ async def send_logs(client: Client, m: Message):  # Correct parameter name
 
 
 
-@bot.on_message(filters.command(["drm"]) & auth_filter)
+@bot.on_message(filters.command(["drm"]) & auth_filter & (filters.private | filters.channel))
 async def txt_handler(bot: Client, m: Message):  
     # Get bot username
     bot_info = await bot.get_me()
