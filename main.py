@@ -490,7 +490,7 @@ async def txt_handler(bot: Client, m: Message):
                     pdf_count += 1
                 elif url.endswith((".png", ".jpeg", ".jpg")):
                     img_count += 1
-                elif "v2" in url:
+                elif "bhosdiwala" in url:
                     v2_count += 1
                 elif "mpd" in url:
                     mpd_count += 1
