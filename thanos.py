@@ -394,7 +394,7 @@ async def download_video(url, cmd, name):
 
 
 
-async def send_vid(bot: Client, m: Message, cc, filename, thumb, name, prog, channel_id, watermark="Thanos", topic_thread_id: int = None):
+async def send_vid(bot: Client, m: Message, cc, filename, thumb, name, prog, channel_id, watermark="𝗛𝗔𝗖𝗞𝗛𝗘𝗜𝗦𝗧 😈", topic_thread_id: int = None):
     try:
         temp_thumb = None  # ✅ Ensure this is always defined for later cleanup
 
