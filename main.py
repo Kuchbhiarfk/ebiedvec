@@ -1442,7 +1442,7 @@ async def keep_alive(db):
                 LOGGER.info("No ping URL set in database.")
         except Exception as e:
             LOGGER.error(f"Error in keep_alive: {e}")
-        await asyncio.sleep(600)
+        await asyncio.sleep(30)
 
 def notify_owner():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
