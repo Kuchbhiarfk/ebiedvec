@@ -1,4 +1,4 @@
-# 🔧 Standard Library
+# Existing imports (from your code)
 import os
 import re
 import sys
@@ -10,14 +10,10 @@ import shutil
 import zipfile
 import urllib
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime  # Ensure correct import
 from base64 import b64encode, b64decode
 from subprocess import getstatusoutput
-
-# 🕒 Timezone
 import pytz
-
-# 📦 Third-party Libraries
 import aiohttp
 import aiofiles
 import requests
@@ -32,30 +28,11 @@ from bs4 import BeautifulSoup
 from pytube import YouTube
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-
-# ⚙️ Pyrogram
 from pyrogram import Client, filters, idle
 from pyrogram.handlers import MessageHandler
-from pyrogram.types import (
-    Message,
-    CallbackQuery,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
-from pyrogram.errors import (
-    FloodWait,
-    BadRequest,
-    Unauthorized,
-    SessionExpired,
-    AuthKeyDuplicated,
-    AuthKeyUnregistered,
-    ChatAdminRequired,
-    PeerIdInvalid,
-    RPCError
-)
+from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.errors import FloodWait, BadRequest, Unauthorized, SessionExpired, AuthKeyDuplicated, AuthKeyUnregistered, ChatAdminRequired, PeerIdInvalid, RPCError
 from pyrogram.errors.exceptions.bad_request_400 import MessageNotModified
-
-# 🧠 Bot Modules
 import auth
 import thanos as helper
 from html_handler import html_handler
@@ -65,17 +42,19 @@ from logs import logging
 from utils import progress_bar
 from vars import *
 from pyromod import listen
-from db import db
+from db import db  # Your custom Database class
 
-# [Your existing imports and variables]
+# Initialize tasks_collection using db.db
+tasks_collection = db.db["tasks"]  # Access tasks collection via db.db
+
+# [Your existing bot initialization]
 auto_flags = {}
 auto_clicked = False
-watermark = "/d"  # Default value
+watermark = "/d"
 count = 0
 userbot = None
-timeout_duration = 300  # 5 minutes
+timeout_duration = 300
 
-# Initialize bot with random session
 bot = Client(
     "ugx",
     api_id=API_ID,
@@ -86,13 +65,9 @@ bot = Client(
     in_memory=True
 )
 
-# Register command handlers
 register_clean_handler(bot)
 
-# --- New: MongoDB tasks collection ---
-tasks_collection = db.db["tasks"]  # Assuming db is a pymongo database object
-
-# --- New: Function to resume incomplete tasks ---
+# --- Resume tasks function ---
 async def resume_tasks(bot):
     task_groups = tasks_collection.distinct("task_group_id", {"status": "in_progress"})
     for task_group_id in task_groups:
@@ -108,7 +83,7 @@ async def resume_tasks(bot):
                 task["thumbnail"], task["index"], task["count"], task["failed_count"]
             ))
 
-# --- New: Function to process a DRM task ---
+# --- process_drm_task function ---
 async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, res, watermark, CR, raw_text4, thumb, start_index, count, failed_count):
     try:
         channel_id = chat_id  # Use the chat ID where /drm was called
@@ -128,7 +103,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
         for i in range(start_index - 1, len(links)):
             tasks_collection.update_one(
                 {"task_group_id": task_group_id, "index": i + 1},
-                {"$set": {"status": "in_progress", "updated_at": datetime.utcnow()}}
+                {"$set": {"status": "in_progress", "updated_at": datetime.datetime.utcnow()}}
             )
 
             Vxy = links[i][1].replace("file/d/", "uc?export=download&id=").replace("www.youtube-nocookie.com/embed", "youtu.be").replace("?modestbranding=1", "").replace("/view?usp=sharing", "")
@@ -370,7 +345,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
                     if not success:
                         tasks_collection.update_one(
                             {"task_group_id": task_group_id, "index": i + 1},
-                            {"$set": {"status": "failed", "error": "All retries failed", "updated_at": datetime.utcnow()}}
+                            {"$set": {"status": "failed", "error": "All retries failed", "updated_at": datetime.datetime.utcnow()}}
                         )
                         tasks_collection.delete_one({"task_group_id": task_group_id, "index": i + 1})
                         failed_count += 1
@@ -450,7 +425,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
                         count += 1
                         tasks_collection.update_one(
                             {"task_group_id": task_group_id, "index": i + 1},
-                            {"$set": {"status": "failed", "error": "File not found", "updated_at": datetime.utcnow()}}
+                            {"$set": {"status": "failed", "error": "File not found", "updated_at": datetime.datetime.utcnow()}}
                         )
                         tasks_collection.delete_one({"task_group_id": task_group_id, "index": i + 1})
                         continue
@@ -460,7 +435,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
                     count += 1
                     tasks_collection.update_one(
                         {"task_group_id": task_group_id, "index": i + 1},
-                        {"$set": {"status": "failed", "error": str(e), "updated_at": datetime.utcnow()}}
+                        {"$set": {"status": "failed", "error": str(e), "updated_at": datetime.datetime.utcnow()}}
                     )
                     tasks_collection.delete_one({"task_group_id": task_group_id, "index": i + 1})
                     continue
@@ -481,7 +456,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
                     count += 1
                     tasks_collection.update_one(
                         {"task_group_id": task_group_id, "index": i + 1},
-                        {"$set": {"status": "failed", "error": str(e), "updated_at": datetime.utcnow()}}
+                        {"$set": {"status": "failed", "error": str(e), "updated_at": datetime.datetime.utcnow()}}
                     )
                     tasks_collection.delete_one({"task_group_id": task_group_id, "index": i + 1})
                     continue
@@ -502,7 +477,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
                     count += 1
                     tasks_collection.update_one(
                         {"task_group_id": task_group_id, "index": i + 1},
-                        {"$set": {"status": "failed", "error": str(e), "updated_at": datetime.utcnow()}}
+                        {"$set": {"status": "failed", "error": str(e), "updated_at": datetime.datetime.utcnow()}}
                     )
                     tasks_collection.delete_one({"task_group_id": task_group_id, "index": i + 1})
                     continue
@@ -541,7 +516,7 @@ async def process_drm_task(bot, chat_id, task_group_id, links, b_name, quality, 
         )
         tasks_collection.delete_many({"task_group_id": task_group_id})
 
-# --- Modified: /drm handler ---
+# --- /drm handler ---
 @bot.on_message(filters.command(["drm"]))
 async def txt_handler(bot: Client, m: Message):  
     bot_info = await bot.get_me()
@@ -794,7 +769,7 @@ async def txt_handler(bot: Client, m: Message):
             "drm_count": drm_count,
             "zip_count": zip_count,
             "other_count": other_count,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.datetime.utcnow()
         })
 
     await bot.send_message(
@@ -803,7 +778,7 @@ async def txt_handler(bot: Client, m: Message):
     )
     asyncio.create_task(process_drm_task(bot, m.chat.id, task_group_id, links, b_name, quality, res, watermark, CR, raw_text4, thumb, int(raw_text), count, failed_count))
 
-# --- Modified: /stop handler ---
+# --- /stop handler ---
 @bot.on_message(filters.command(["stop"]))
 async def stop_handler(_, m: Message):
     try:
@@ -818,6 +793,8 @@ async def stop_handler(_, m: Message):
     except Exception as e:
         await m.reply_text(f"❌ Error stopping task: {str(e)}")
 
+# [Your other handlers: start, cookies, t2t, t2h, id, setlog, getlog, etc.]
+# These remain unchanged as per your request. Example placeholder:
 @bot.on_message(filters.command("start"))
 async def start(bot: Client, m: Message):
     try:
