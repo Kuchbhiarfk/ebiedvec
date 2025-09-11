@@ -831,26 +831,49 @@ async def txt_handler(bot: Client, m: Message):
                 response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
                 url   = response.json()['url']
 
-            elif "studystark" in url:
+            elif "studystark.site" in url:
                 try:
                     response = requests.get(url)
                     response.raise_for_status()  # Raises an error for bad status codes
                     data = response.json()
                     video_url = data.get("video_url", "")
                     print(f"Original video_url: {video_url}")  # Debugging
+
                     if video_url:
-                        # Ensure video_url ends with master.mpd or handle other formats
-                        if video_url.endswith("master.mpd"):
-                            url = video_url.replace("master.mpd", f"hls/{raw_text97}/main.m3u8")
+                        if video_url.startswith("https://sec"):
+                            # ✅ New logic for sec links
+                            base_path = video_url.split('?')[0].replace('master.mpd', '')
+                            query_params = video_url.split('?')[1] if '?' in video_url else ''
+
+                            # Construct new m3u8 URL
+                            new_url = f"{base_path}hls/{raw_text97}/main.m3u8" + (f"?{query_params}" if query_params else '')
+                            new_url = new_url.replace(
+                                "https://sec-prod-mediacdn.pw.live",
+                                "https://anonymousrajputplayer-9ab2f2730a02.herokuapp.com/sec-prod-mediacdn.pw.live"
+                            )
+
+                            # Add raw_textx token directly
+                            url = f"{new_url}&token={raw_text4}"
+                            print(f"Generated new_url with token: {url}")
+
+                        elif video_url.startswith("https://next"):
+                            # ✅ Keep existing logic
+                            if video_url.endswith("master.mpd"):
+                                url = video_url.replace("master.mpd", f"hls/{raw_text97}/main.m3u8")
+                            else:
+                                # Handle cases where video_url doesn't end with master.mpd
+                                base_url = video_url.rsplit("/", 1)[0]  # Remove any trailing segment
+                                url = f"{base_url}/hls/{raw_text97}/main.m3u8"
+                            print(f"Final URL: {url}")  # Debugging
+
                         else:
-                            # Handle cases where video_url doesn't end with master.mpd
-                            # Append hls/[raw_text97]/main.m3u8 to the base URL
-                            base_url = video_url.rsplit("/", 1)[0]  # Remove any trailing segment
-                            url = f"{base_url}/hls/{raw_text97}/main.m3u8"
-                        print(f"Final URL: {url}")  # Debugging
+                            print("Unsupported video_url format")
+                            url = ""
+
                     else:
                         print("Error: video_url is empty")
                         url = ""  # Handle empty video_url
+
                 except requests.RequestException as e:
                     print(f"Error fetching URL: {e}")
                     url = ""  # Fallback to empty string
