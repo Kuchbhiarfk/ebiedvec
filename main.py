@@ -1405,15 +1405,6 @@ async def text_handler(bot: Client, m: Message):
     except Exception as e:
         await m.reply_text(str(e))
 
-def notify_owner():
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {
-        "chat_id": OWNER_ID,
-        "text": "Bᴏᴛ Iꜱ Lɪᴠᴇ Nᴏᴡ 🤖"
-    }
-    requests.post(url, data=data)
-
-
 def reset_and_set_commands():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/setMyCommands"
     # Reset
@@ -1440,7 +1431,6 @@ def reset_and_set_commands():
 
 
 if __name__ == "__main__":
-    reset_and_set_commands()
-    notify_owner() 
+    reset_and_set_commands() 
 
 bot.run()
