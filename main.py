@@ -1,4 +1,3 @@
-# Existing imports (from your code)
 # 🔧 Standard Library
 import os
 import re
@@ -68,21 +67,15 @@ from vars import *
 from pyromod import listen
 from db import db
 
-# --- New: MongoDB initialization ---
-from pymongo import MongoClient
-MONGO_URI = "mongodb+srv://elvishyadavop:ClA5yIHTbCutEnVP@cluster0.u83zlfx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"  # Replace with your MongoDB URI
-client = MongoClient(MONGO_URI)
-db_mongo = client["DevThanos"]  # Name of your MongoDB database
-tasks_collection = db_mongo["tasks"]  # Collection for tasks
-
-# [Your existing bot initialization]
+# [Your existing imports and variables]
 auto_flags = {}
 auto_clicked = False
-watermark = "/d"
+watermark = "/d"  # Default value
 count = 0
 userbot = None
-timeout_duration = 300
+timeout_duration = 300  # 5 minutes
 
+# Initialize bot with random session
 bot = Client(
     "ugx",
     api_id=API_ID,
@@ -93,9 +86,13 @@ bot = Client(
     in_memory=True
 )
 
+# Register command handlers
 register_clean_handler(bot)
 
-# --- New: Resume tasks function ---
+# --- New: MongoDB tasks collection ---
+tasks_collection = db.db["tasks"]  # Assuming db is a pymongo database object
+
+# --- New: Function to resume incomplete tasks ---
 async def resume_tasks(bot):
     task_groups = tasks_collection.distinct("task_group_id", {"status": "in_progress"})
     for task_group_id in task_groups:
@@ -1136,8 +1133,6 @@ async def get_log_channel_cmd(client: Client, message: Message):
 
     except Exception as e:
         await message.reply_text(f"❌ Error: {str(e)}")
-# [Other handlers like t2t, t2h, id, setlog, getlog, etc., remain unchanged]
-
 
 def notify_owner():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -1169,5 +1164,5 @@ def reset_and_set_commands():
 if __name__ == "__main__":
     reset_and_set_commands()
     notify_owner()
- 
+
 bot.run()
