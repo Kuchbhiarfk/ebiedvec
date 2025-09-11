@@ -1405,6 +1405,22 @@ async def text_handler(bot: Client, m: Message):
     except Exception as e:
         await m.reply_text(str(e))
 
+# Keep Running 
+async def keep_alive(db):
+    while True:
+        LOGGER.info("keep_alive loop running...")
+        try:
+            ping_url = db.get_value("ping_url")
+            if ping_url:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(ping_url) as resp:
+                        LOGGER.info(f"Pinged {ping_url}: {await resp.text()}")
+            else:
+                LOGGER.info("No ping URL set in database.")
+        except Exception as e:
+            LOGGER.error(f"Error in keep_alive: {e}")
+        await asyncio.sleep(600)
+
 def reset_and_set_commands():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/setMyCommands"
     # Reset
