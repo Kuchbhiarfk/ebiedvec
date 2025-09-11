@@ -849,7 +849,7 @@ async def txt_handler(bot: Client, m: Message):
                             new_url = f"{base_path}hls/{raw_text97}/main.m3u8" + (f"?{query_params}" if query_params else '')
                             new_url = new_url.replace(
                                 "https://sec-prod-mediacdn.pw.live",
-                                "https://anonymousrajputplayer-9ab2f2730a02.herokuapp.com/sec-prod-mediacdn.pw.live"
+                                "https://anonymouspwplayer-0e5a3f512dec.herokuapp.com/sec-prod-mediacdn.pw.live"
                             )
 
                             # Add raw_textx token directly
