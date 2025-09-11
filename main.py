@@ -1,3 +1,4 @@
+# Existing imports (from your code)
 # 🔧 Standard Library
 import os
 import re
@@ -67,15 +68,21 @@ from vars import *
 from pyromod import listen
 from db import db
 
-# [Your existing imports and variables]
+# --- New: MongoDB initialization ---
+from pymongo import MongoClient
+MONGO_URI = "mongodb+srv://elvishyadavop:ClA5yIHTbCutEnVP@cluster0.u83zlfx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"  # Replace with your MongoDB URI
+client = MongoClient(MONGO_URI)
+db_mongo = client["DevThanos"]  # Name of your MongoDB database
+tasks_collection = db_mongo["tasks"]  # Collection for tasks
+
+# [Your existing bot initialization]
 auto_flags = {}
 auto_clicked = False
-watermark = "/d"  # Default value
+watermark = "/d"
 count = 0
 userbot = None
-timeout_duration = 300  # 5 minutes
+timeout_duration = 300
 
-# Initialize bot with random session
 bot = Client(
     "ugx",
     api_id=API_ID,
@@ -86,13 +93,9 @@ bot = Client(
     in_memory=True
 )
 
-# Register command handlers
 register_clean_handler(bot)
 
-# --- New: MongoDB tasks collection ---
-tasks_collection = db["tasks"]  # Assuming db is a pymongo database object
-
-# --- New: Function to resume incomplete tasks ---
+# --- New: Resume tasks function ---
 async def resume_tasks(bot):
     task_groups = tasks_collection.distinct("task_group_id", {"status": "in_progress"})
     for task_group_id in task_groups:
@@ -818,19 +821,323 @@ async def stop_handler(_, m: Message):
     except Exception as e:
         await m.reply_text(f"❌ Error stopping task: {str(e)}")
 
-# [Your other handlers: start, cookies, t2t, t2h, id, setlog, getlog, etc.]
-# These remain unchanged as per your request. Example placeholder:
 @bot.on_message(filters.command("start"))
 async def start(bot: Client, m: Message):
-    # Your original start handler logic
-    pass
+    try:
+        if m.chat.type == "channel":
+            if not db.is_channel_authorized(m.chat.id, bot.me.username):
+                return
+                
+            await m.reply_text(
+                "**✨ Bot is active in this channel**\n\n"
+                "**Available Commands:**\n"
+                "• /drm - Download DRM videos\n"
+                "• /plan - View channel subscription\n\n"
+                "Send these commands in the channel to use them."
+            )
+        else:
+            # Check user authorization
+            is_authorized = db.is_user_authorized(m.from_user.id, bot.me.username)
+            is_admin = db.is_admin(m.from_user.id)
+            
+            if not is_authorized:
+                await m.reply_photo(
+                    photo=photologo,
+                    caption="**Mʏ Nᴀᴍᴇ [DRM Wɪᴢᴀʀᴅ 🦋](https://t.me/DRM_Wizardbot)\n\nYᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴀᴄᴄᴇꜱꜱ ᴛᴏ ᴜꜱᴇ ᴛʜɪꜱ ʙᴏᴛ\nCᴏɴᴛᴀᴄᴛ [⌯ FʀᴏɴᴛMᴀɴ | ×͜× |](https://t.me/Mrfrontman001) ғᴏʀ ᴀᴄᴄᴇꜱꜱ**",
+                    reply_markup=InlineKeyboardMarkup([
+    [
+        InlineKeyboardButton("⌯ FʀᴏɴᴛMᴀɴ | ×͜× |", url="https://t.me/MrFrontMan001")
+    ],
+    [
+        InlineKeyboardButton("ғᴇᴀᴛᴜʀᴇꜱ 🪔", callback_data="help"),
+        InlineKeyboardButton("ᴅᴇᴛᴀɪʟꜱ 🦋", callback_data="help")
+    ]
+])
+                )
+                return
+                
+            commands_list = (
+                "**>  /drm - ꜱᴛᴀʀᴛ ᴜᴘʟᴏᴀᴅɪɴɢ ᴄᴘ/ᴄᴡ ᴄᴏᴜʀꜱᴇꜱ**\n"
+                "**>  /plan - ᴠɪᴇᴡ ʏᴏᴜʀ ꜱᴜʙꜱᴄʀɪᴘᴛɪᴏɴ ᴅᴇᴛᴀɪʟꜱ**\n"
+            )
+            
+            if is_admin:
+                commands_list += (
+                    "\n**👑 Admin Commands**\n"
+                    "• /users - List all users\n"
+                )
+            
+            await m.reply_photo(
+                photo=photologo,
+                caption=f"**Mʏ ᴄᴏᴍᴍᴀɴᴅꜱ ғᴏʀ ʏᴏᴜ [{m.from_user.first_name} ](tg://settings)**\n\n{commands_list}",
+                reply_markup=InlineKeyboardMarkup([
+    [
+        InlineKeyboardButton("⌯ FʀᴏɴᴛMᴀɴ | ×͜× |", url="https://t.me/MrFrontMan001")
+    ],
+    [
+        InlineKeyboardButton("ғᴇᴀᴛᴜʀᴇꜱ 🪔", callback_data="help"),
+        InlineKeyboardButton("ᴅᴇᴛᴀɪʟꜱ 🦋", callback_data="help")
+    ]])
+)
+            
+    except Exception as e:
+        print(f"Error in start command: {str(e)}")
+
+
+def auth_check_filter(_, client, message):
+    try:
+        # For channel messages
+        if message.chat.type == "channel":
+            return db.is_channel_authorized(message.chat.id, client.me.username)
+        # For private messages
+        else:
+            return db.is_user_authorized(message.from_user.id, client.me.username)
+    except Exception:
+        return False
+
+auth_filter = filters.create(auth_check_filter)
+
+@bot.on_message(~auth_filter & filters.private & filters.command)
+async def unauthorized_handler(client, message: Message):
+    await message.reply(
+        "<b>Mʏ Nᴀᴍᴇ [DRM Wɪᴢᴀʀᴅ 🦋](https://t.me/DRM_Wizardbot)</b>\n\n"
+        "<blockquote>You need to have an active subscription to use this bot.\n"
+        "Please contact admin to get premium access.</blockquote>",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("💫 Get Premium Access", url="https://t.me/MrFrontMan001")
+        ]])
+    )
+
+@bot.on_message(filters.command(["id"]))
+async def id_command(client, message: Message):
+    chat_id = message.chat.id
+    await message.reply_text(
+        f"<blockquote>The ID of this chat id is:</blockquote>\n`{chat_id}`"
+    )
+
+
+
+@bot.on_message(filters.command(["t2h"]))
+async def call_html_handler(bot: Client, message: Message):
+    await html_handler(bot, message)
+    
+
+@bot.on_message(filters.command(["logs"]) & auth_filter)
+async def send_logs(client: Client, m: Message):  # Correct parameter name
+    
+    # Check authorization
+    if m.chat.type == "channel":
+        if not db.is_channel_authorized(m.chat.id, bot_username):
+            return
+    else:
+        if not db.is_user_authorized(m.from_user.id, bot_username):
+            await m.reply_text("❌ You are not authorized to use this command.")
+            return
+            
+    try:
+        with open("logs.txt", "rb") as file:
+            sent = await m.reply_text("**📤 Sending you ....**")
+            await m.reply_document(document=file)
+            await sent.delete()
+    except Exception as e:
+        await m.reply_text(f"**Error sending logs:**\n<blockquote>{e}</blockquote>")
+
+# [Your other handlers: start, cookies, t2t, t2h, id, setlog, getlog, etc.]
+# These remain unchanged as per your request. Example placeholder:
+# Re-register auth commands
+bot.add_handler(MessageHandler(auth.add_user_cmd, filters.command("add") & filters.private))
+bot.add_handler(MessageHandler(auth.remove_user_cmd, filters.command("remove") & filters.private))
+bot.add_handler(MessageHandler(auth.list_users_cmd, filters.command("users") & filters.private))
+bot.add_handler(MessageHandler(auth.my_plan_cmd, filters.command("plan") & filters.private))
+
+cookies_file_path = os.getenv("cookies_file_path", "youtube_cookies.txt")
+api_url = "http://master-api-v3.vercel.app/"
+api_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNzkxOTMzNDE5NSIsInRnX3VzZXJuYW1lIjoi4p61IFtvZmZsaW5lXSIsImlhdCI6MTczODY5MjA3N30.SXzZ1MZcvMp5sGESj0hBKSghhxJ3k1GTWoBUbivUe1I"
+cwtoken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3NTExOTcwNjQsImNvbiI6eyJpc0FkbWluIjpmYWxzZSwiYXVzZXIiOiJVMFZ6TkdGU2NuQlZjR3h5TkZwV09FYzBURGxOZHowOSIsImlkIjoiVWtoeVRtWkhNbXRTV0RjeVJIcEJUVzExYUdkTlp6MDkiLCJmaXJzdF9uYW1lIjoiVWxadVFXaFBaMnAwSzJsclptVXpkbGxXT0djMlREWlRZVFZ5YzNwdldXNXhhVEpPWjFCWFYyd3pWVDA9IiwiZW1haWwiOiJWSGgyWjB0d2FUZFdUMVZYYmxoc2FsZFJSV2xrY0RWM2FGSkRSU3RzV0c5M1pDOW1hR0kxSzBOeVRUMD0iLCJwaG9uZSI6IldGcFZSSFZOVDJFeGNFdE9Oak4zUzJocmVrNHdRVDA5IiwiYXZhdGFyIjoiSzNWc2NTOHpTMHAwUW5sa2JrODNSRGx2ZWtOaVVUMDkiLCJyZWZlcnJhbF9jb2RlIjoiWkdzMlpUbFBORGw2Tm5OclMyVTRiRVIxTkVWb1FUMDkiLCJkZXZpY2VfdHlwZSI6ImFuZHJvaWQiLCJkZXZpY2VfdmVyc2lvbiI6IlEoQW5kcm9pZCAxMC4wKSIsImRldmljZV9tb2RlbCI6IlhpYW9taSBNMjAwN0oyMENJIiwicmVtb3RlX2FkZHIiOiI0NC4yMDIuMTkzLjIyMCJ9fQ.ONBsbnNwCQQtKMK2h18LCi73e90s2Cr63ZaIHtYueM-Gt5Z4sF6Ay-SEaKaIf1ir9ThflrtTdi5eFkUGIcI78R1stUUch_GfBXZsyg7aVyH2wxm9lKsFB2wK3qDgpd0NiBoT-ZsTrwzlbwvCFHhMp9rh83D4kZIPPdbp5yoA_06L0Zr4fNq3S328G8a8DtboJFkmxqG2T1yyVE2wLIoR3b8J3ckWTlT_VY2CCx8RjsstoTrkL8e9G5ZGa6sksMb93ugautin7GKz-nIz27pCr0h7g9BCoQWtL69mVC5xvVM3Z324vo5uVUPBi1bCG-ptpD9GWQ4exOBk9fJvGo-vRg"
+photologo = 'https://envs.sh/Nf.jpg/IMG20250803704.jpg' #https://envs.sh/fH.jpg/IMG20250803719.jpg
+photoyt = 'https://tinypic.host/images/2025/03/18/YouTube-Logo.wine.png' #https://envs.sh/fH.jpg/IMG20250803719.jpg
+photocp = 'https://tinypic.host/images/2025/03/28/IMG_20250328_133126.jpg'
+photozip = 'https://envs.sh/fH.jpg/IMG20250803719.jpg'
+
+
+# Inline keyboard for start command
+BUTTONSCONTACT = InlineKeyboardMarkup([[InlineKeyboardButton(text="📞 Contact", url="https://t.me/MrFrontMan001")]])
+keyboard = InlineKeyboardMarkup(
+    [
+        [
+            InlineKeyboardButton(text="🛠️ Help", url="https://t.me/MrFrontMan001")        ],
+    ]
+)
+
+# Image URLs for the random image feature
+image_urls = [
+    "https://envs.sh/Nf.jpg/IMG20250803704.jpg",
+    "https://envs.sh/Nf.jpg/IMG20250803704.jpg",
+    "https://envs.sh/Nf.jpg/IMG20250803704.jpg",
+    # Add more image URLs as needed
+]
 
 @bot.on_message(filters.command("cookies") & filters.private)
 async def cookies_handler(client: Client, m: Message):
-    # Your original cookies handler logic
-    pass
+    await m.reply_text(
+        "Please upload the cookies file (.txt format).",
+        quote=True
+    )
+
+    try:
+        # Wait for the user to send the cookies file
+        input_message: Message = await client.listen(m.chat.id)
+
+        # Validate the uploaded file
+        if not input_message.document or not input_message.document.file_name.endswith(".txt"):
+            await m.reply_text("Invalid file type. Please upload a .txt file.")
+            return
+
+        # Download the cookies file
+        downloaded_path = await input_message.download()
+
+        # Read the content of the uploaded file
+        with open(downloaded_path, "r") as uploaded_file:
+            cookies_content = uploaded_file.read()
+
+        # Replace the content of the target cookies file
+        with open(cookies_file_path, "w") as target_file:
+            target_file.write(cookies_content)
+
+        await input_message.reply_text(
+            "✅ Cookies updated successfully.\n📂 Saved in `youtube_cookies.txt`."
+        )
+
+    except Exception as e:
+        await m.reply_text(f"⚠️ An error occurred: {str(e)}")
+
+@bot.on_message(filters.command(["t2t"]))
+async def text_to_txt(client, message: Message):
+    user_id = str(message.from_user.id)
+    # Inform the user to send the text data and its desired file name
+    editable = await message.reply_text(f"<blockquote>Welcome to the Text to .txt Converter!\nSend the **text** for convert into a `.txt` file.</blockquote>")
+    input_message: Message = await bot.listen(message.chat.id)
+    if not input_message.text:
+        await message.reply_text("**Send valid text data**")
+        return
+
+    text_data = input_message.text.strip()
+    await input_message.delete()  # Corrected here
+    
+    await editable.edit("**🔄 Send file name or send /d for filename**")
+    inputn: Message = await bot.listen(message.chat.id)
+    raw_textn = inputn.text
+    await inputn.delete()  # Corrected here
+    await editable.delete()
+
+    if raw_textn == '/d':
+        custom_file_name = 'txt_file'
+    else:
+        custom_file_name = raw_textn
+
+    txt_file = os.path.join("downloads", f'{custom_file_name}.txt')
+    os.makedirs(os.path.dirname(txt_file), exist_ok=True)  # Ensure the directory exists
+    with open(txt_file, 'w') as f:
+        f.write(text_data)
+        
+    await message.reply_document(document=txt_file, caption=f"`{custom_file_name}.txt`\n\n<blockquote>You can now download your content! 📥</blockquote>")
+    os.remove(txt_file)
+
+# Define paths for uploaded file and processed file
+UPLOAD_FOLDER = '/path/to/upload/folder'
+EDITED_FILE_PATH = '/path/to/save/edited_output.txt'
+
+@bot.on_message(filters.command("getcookies") & filters.private)
+async def getcookies_handler(client: Client, m: Message):
+    try:
+        # Send the cookies file to the user
+        await client.send_document(
+            chat_id=m.chat.id,
+            document=cookies_file_path,
+            caption="Here is the `youtube_cookies.txt` file."
+        )
+    except Exception as e:
+        await m.reply_text(f"⚠️ An error occurred: {str(e)}")
+
 
 # [Other handlers like t2t, t2h, id, setlog, getlog, etc., remain unchanged]
+@bot.on_message(filters.command("setlog") & filters.private)
+async def set_log_channel_cmd(client: Client, message: Message):
+    """Set log channel for the bot"""
+    try:
+        # Check if user is admin
+        if not db.is_admin(message.from_user.id):
+            await message.reply_text("⚠️ You are not authorized to use this command.")
+            return
+
+        # Get command arguments
+        args = message.text.split()
+        if len(args) != 2:
+            await message.reply_text(
+                "❌ Invalid format!\n\n"
+                "Use: /setlog channel_id\n"
+                "Example: /setlog -100123456789"
+            )
+            return
+
+        try:
+            channel_id = int(args[1])
+        except ValueError:
+            await message.reply_text("❌ Invalid channel ID. Please use a valid number.")
+            return
+
+        # Set the log channel without validation
+        if db.set_log_channel(client.me.username, channel_id):
+            await message.reply_text(
+                "✅ Log channel set successfully!\n\n"
+                f"Channel ID: {channel_id}\n"
+                f"Bot: @{client.me.username}"
+            )
+        else:
+            await message.reply_text("❌ Failed to set log channel. Please try again.")
+
+    except Exception as e:
+        await message.reply_text(f"❌ Error: {str(e)}")
+     
+@bot.on_message(filters.command("getlog") & filters.private)
+async def get_log_channel_cmd(client: Client, message: Message):
+    """Get current log channel info"""
+    try:
+        # Check if user is admin
+        if not db.is_admin(message.from_user.id):
+            await message.reply_text("⚠️ You are not authorized to use this command.")
+            return
+
+        # Get log channel ID
+        channel_id = db.get_log_channel(client.me.username)
+        
+        if channel_id:
+            # Try to get channel info but don't worry if it fails
+            try:
+                channel = await client.get_chat(channel_id)
+                channel_info = f"📢 Channel Name: {channel.title}\n"
+            except:
+                channel_info = ""
+            
+            await message.reply_text(
+                f"**📋 Log Channel Info**\n\n"
+                f"🤖 Bot: @{client.me.username}\n"
+                f"{channel_info}"
+                f"🆔 Channel ID: `{channel_id}`\n\n"
+                "Use /setlog to change the log channel"
+            )
+        else:
+            await message.reply_text(
+                f"**📋 Log Channel Info**\n\n"
+                f"🤖 Bot: @{client.me.username}\n"
+                "❌ No log channel set\n\n"
+                "Use /setlog to set a log channel"
+            )
+
+    except Exception as e:
+        await message.reply_text(f"❌ Error: {str(e)}")
+# [Other handlers like t2t, t2h, id, setlog, getlog, etc., remain unchanged]
+
 
 def notify_owner():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -862,5 +1169,5 @@ def reset_and_set_commands():
 if __name__ == "__main__":
     reset_and_set_commands()
     notify_owner()
-
+ 
 bot.run()
