@@ -848,7 +848,7 @@ async def txt_handler(bot: Client, m: Message):
                             base_path = video_url.split('?')[0].replace('master.mpd', '')
                             query_params = video_url.split('?')[1] if '?' in video_url else ''
 
-                            # Construct new m3u8 URL
+                # # Construct new m3u8 URL
                             new_url = f"{base_path}hls/{raw_text97}/main.m3u8" + (f"?{query_params}" if query_params else '')
                             url = new_url
                             print(f"Generated new_url: {url}")
