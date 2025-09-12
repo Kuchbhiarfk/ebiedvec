@@ -831,7 +831,7 @@ async def txt_handler(bot: Client, m: Message):
                 response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
                 url   = response.json()['url']
 
-            elif "studystark" in url:
+            elif "studystark.site" in url:
                 try:
                     response = requests.get(url)
                     response.raise_for_status()  # Raises an error for bad status codes
@@ -841,30 +841,47 @@ async def txt_handler(bot: Client, m: Message):
 
                     if video_url:
                         if video_url.startswith("https://sec"):
-                            # ✅ New logic for sec links
+                            # ✅ Logic for sec links
                             base_path = video_url.split('?')[0].replace('master.mpd', '')
                             query_params = video_url.split('?')[1] if '?' in video_url else ''
 
                             # Construct new m3u8 URL
-                            new_url = f"{base_path}hls/{raw_text97}/main.m3u8" + (f"?{query_params}" if query_params else '')
+                            new_url = f"{base_path}hls/{raw_text65}/main.m3u8" + (f"?{query_params}" if query_params else '')
                             new_url = new_url.replace(
                                 "https://sec-prod-mediacdn.pw.live",
-                                "https://anonymouspwplayer-0e5a3f512dec.herokuapp.com/sec-prod-mediacdn.pw.live"
+                                "https://anonymousrajputplayer-9ab2f2730a02.herokuapp.com/sec-prod-mediacdn.pw.live"
                             )
 
-                            # Add raw_textx token directly
-                            url = f"{new_url}&token={raw_text4}"
-                            print(f"Generated new_url with token: {url}")
+                            # Prepare API request
+                            api_url = "https://api-accesstoken.vercel.app"
+                            headers = {"Content-Type": "application/json"}
+
+                            try:
+                                resp = requests.get(api_url, headers=headers, timeout=10)
+                                if resp.status_code == 200:
+                                    response_data = resp.json()
+                                    if 'access_token' in response_data:
+                                        token = response_data['access_token']
+                                        url = f"{new_url}&token={token}"
+                                        print(f"Generated new_url with API token: {url}")
+                                    else:
+                                        url = f"{new_url}&token={raw_text4}"
+                                        print(f"No access_token in API response, using fallback token: {url}")
+                                else:
+                                    url = f"{new_url}&token={raw_textx}"
+                                    print(f"API request failed ({resp.status_code}), using fallback token: {url}")
+                            except Exception as e:
+                                url = f"{new_url}&token={raw_textx}"
+                                print(f"Error fetching API token ({e}), using fallback token: {url}")
 
                         elif video_url.startswith("https://next"):
-                            # ✅ Keep existing logic
+                            # ✅ Logic for next links
                             if video_url.endswith("master.mpd"):
                                 url = video_url.replace("master.mpd", f"hls/{raw_text97}/main.m3u8")
                             else:
-                                # Handle cases where video_url doesn't end with master.mpd
                                 base_url = video_url.rsplit("/", 1)[0]  # Remove any trailing segment
                                 url = f"{base_url}/hls/{raw_text97}/main.m3u8"
-                            print(f"Final URL: {url}")  # Debugging
+                            print(f"Final URL: {url}")
 
                         else:
                             print("Unsupported video_url format")
@@ -872,7 +889,7 @@ async def txt_handler(bot: Client, m: Message):
 
                     else:
                         print("Error: video_url is empty")
-                        url = ""  # Handle empty video_url
+                        url = ""
 
                 except requests.RequestException as e:
                     print(f"Error fetching URL: {e}")
@@ -880,6 +897,7 @@ async def txt_handler(bot: Client, m: Message):
                 except ValueError as e:
                     print(f"Error parsing JSON: {e}")
                     url = ""  # Fallback to empty string
+
 
             if "edge.api.brightcove.com" in url:
                 bcov = f'bcov_auth={cwtoken}'
