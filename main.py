@@ -1409,15 +1409,18 @@ async def text_handler(bot: Client, m: Message):
                     count += 1
                     await asyncio.sleep(1)
                     continue
+     
+             
+
+             
                 else:
-                    Show = f"**🚀Dᴏᴡɴʟᴏᴀᴅɪɴɢ Sᴛᴀʀᴛᴇᴅ **\n" \
-                           f"🔗 𝐋𝐢𝐧𝐤 » {url}\n" \
-                           f"✦ Uploader {CREDIT}"
-                    prog = await m.reply_text(Show, disable_web_page_preview=True)
+                    Show = f"<i><b>📥 Fast Video Downloading</b></i>\n<blockquote><b>{str(count).zfill(3)}) {name1}</b></blockquote>"
+                    prog = await bot.send_message(channel_id, Show, disable_web_page_preview=True)
                     res_file = await helper.download_video(url, cmd, name)
                     filename = res_file
                     await prog.delete(True)
                     await helper.send_vid(bot, m, cc, filename, thumb, name, prog, channel_id, watermark=watermark)
+                    count += 1
                     time.sleep(1)
                 
             except Exception as e:
