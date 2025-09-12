@@ -831,7 +831,7 @@ async def txt_handler(bot: Client, m: Message):
                 response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
                 url   = response.json()['url']
 
-            elif "studystark.site" in url:
+            elif "studystark" in url:
                 try:
                     response = requests.get(url)
                     response.raise_for_status()  # Raises an error for bad status codes
