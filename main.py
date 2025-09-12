@@ -1399,16 +1399,18 @@ async def text_handler(bot: Client, m: Message):
                     await asyncio.sleep(1)  
                     pass
 
-                elif 'sec-prod-mediacdn.pw.live' in url:
-                    Show = f"<i><b>📥 Fast Video Downloading</b></i>\n<blockquote><b>{str(count).zfill(3)}) {name1}</b></blockquote>"
-                    prog = await bot.send_message(channel_id, Show, disable_web_page_preview=True)
-                    res_file = await helper.decrypt_and_merge_video(url, keys_string, path, name1, raw_text2)
+                elif 'drmcdni' in url or 'drm/wv' in url:
+                    Show = f"**⚡Dᴏᴡɴʟᴏᴀᴅɪɴɢ Sᴛᴀʀᴛᴇᴅ...⏳**\n" \
+                           f"🖇️ LNK » {url}\n" \
+                           f"🎓 Uploaded By » {CREDIT}"
+                    prog = await m.reply_text(Show, disable_web_page_preview=True)
+                    res_file = await helper.decrypt_and_merge_video(mpd, keys_string, path, name, raw_text2)
                     filename = res_file
                     await prog.delete(True)
-                    await helper.send_vid(bot, m, cc, filename, thumb, name1, prog, channel_id, watermark=watermark)
-                    count += 1
+                    await helper.send_vid(bot, m, cc, filename, thumb, name, prog, channel_id, watermark=watermark)
                     await asyncio.sleep(1)
-                    continue
+                    pass
+
      
              
 
