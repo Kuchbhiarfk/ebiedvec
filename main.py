@@ -1189,11 +1189,42 @@ async def text_handler(bot: Client, m: Message):
     arg =1
     channel_id = m.chat.id
     try:
-            Vxy = link.replace("file/d/","uc?export=download&id=").replace("www.youtube-nocookie.com/embed", "youtu.be").replace("?modestbranding=1", "").replace("/view?usp=sharing","")
-            url = Vxy
+            Vxy = links[i][1].replace("file/d/", "uc?export=download&id=").replace("www.youtube-nocookie.com/embed", "youtu.be").replace("?modestbranding=1", "").replace("/view?usp=sharing", "")
+            # URL processing
+            if not Vxy.startswith("https://"):
+                url = "https://" + Vxy
+            else:
+                url = Vxy
 
-            name1 = links.replace("(", "[").replace(")", "]").replace("_", "").replace("\t", "").replace(":", "").replace("/", "").replace("+", "").replace("#", "").replace("|", "").replace("@", "").replace("*", "").replace(".", "").replace("https", "").replace("http", "").strip()
-            name = f'{name1[:60]}'
+            # Title processing
+            title = links[i][0]
+            raw_text97 = ""
+            name1 = ""
+            raw_text65 = ""
+
+            # Check for both delimiters and the correct format
+            if "🌚" in title and "💀" in title:
+                try:
+                    # Split on 🌚 to isolate raw_text97 and the rest
+                    parts = title.split("🌚")
+                    if len(parts) >= 3:
+                        raw_text97 = parts[1].strip()  # Extract raw_text97
+                        # Split the remaining part on 💀 to get name1 and raw_text65
+                        remaining = parts[2].split("💀")
+                        if len(remaining) >= 3:
+                            name1 = remaining[0].strip()  # Extract name1
+                            raw_text65 = remaining[1].strip()  # Extract raw_text65
+                        else:
+                            name1 = remaining[0].strip() if remaining else title.strip()
+                except IndexError:
+                    # Fallback in case of malformed title
+                    name1 = title.strip()
+            else:
+                # Fallback if delimiters are missing
+                name1 = title.strip()
+
+            cleaned_name1 = name1.replace("(", "[").replace(")", "]").replace("_", "").replace("\t", "").replace(":", "").replace("/", "").replace("+", "").replace("#", "").replace("|", "").replace("@", "").replace("*", "").replace(".", "").replace("https", "").replace("http", "").strip()
+            name = f'[𝗛𝗔𝗖𝗞𝗛𝗘𝗜𝗦𝗧😈]{cleaned_name1[:60]}'
             
             if "visionias" in url:
                 async with ClientSession() as session:
@@ -1281,8 +1312,73 @@ async def text_handler(bot: Client, m: Message):
                 response = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
                 url   = response.json()['url']
 
-            elif "childId" in url and "parentId" in url:
-                    url = f"https://anonymouspwplayer-0e5a3f512dec.herokuapp.com/pw?url={url}&token={raw_text4}"
+            elif "studystark" in url:
+                try:
+                    response = requests.get(url)
+                    response.raise_for_status()  # Raises an error for bad status codes
+                    data = response.json()
+                    video_url = data.get("video_url", "")
+                    print(f"Original video_url: {video_url}")  # Debugging
+
+                    if video_url:
+                        if video_url.startswith("https://sec"):
+                            # ✅ Logic for sec links
+                            base_path = video_url.split('?')[0].replace('master.mpd', '')
+                            query_params = video_url.split('?')[1] if '?' in video_url else ''
+
+                            # Construct new m3u8 URL
+                            new_url = f"{base_path}hls/{raw_text97}/main.m3u8" + (f"?{query_params}" if query_params else '')
+                            new_url = new_url.replace(
+                                "https://sec-prod-mediacdn.pw.live",
+                                "https://anonymouspwplayer-0e5a3f512dec.herokuapp.com/sec-prod-mediacdn.pw.live"
+                            )
+
+                            # Prepare API request
+                            api_url = "https://api-accesstoken.vercel.app"
+                            headers = {"Content-Type": "application/json"}
+
+                            try:
+                                resp = requests.get(api_url, headers=headers, timeout=10)
+                                if resp.status_code == 200:
+                                    response_data = resp.json()
+                                    if 'access_token' in response_data:
+                                        token = response_data['access_token']
+                                        url = f"{new_url}&token={token}"
+                                        print(f"Generated new_url with API token: {url}")
+                                    else:
+                                        url = f"{new_url}&token={raw_text4}"
+                                        print(f"No access_token in API response, using fallback token: {url}")
+                                else:
+                                    url = f"{new_url}&token={raw_textx}"
+                                    print(f"API request failed ({resp.status_code}), using fallback token: {url}")
+                            except Exception as e:
+                                url = f"{new_url}&token={raw_textx}"
+                                print(f"Error fetching API token ({e}), using fallback token: {url}")
+
+                        elif video_url.startswith("https://next"):
+                            # ✅ Logic for next links
+                            if video_url.endswith("master.mpd"):
+                                url = video_url.replace("master.mpd", f"hls/{raw_text97}/main.m3u8")
+                            else:
+                                base_url = video_url.rsplit("/", 1)[0]  # Remove any trailing segment
+                                url = f"{base_url}/hls/{raw_text97}/main.m3u8"
+                            print(f"Final URL: {url}")
+
+                        else:
+                            print("Unsupported video_url format")
+                            url = ""
+
+                    else:
+                        print("Error: video_url is empty")
+                        url = ""
+
+                except requests.RequestException as e:
+                    print(f"Error fetching URL: {e}")
+                    url = ""  # Fallback to empty string
+                except ValueError as e:
+                    print(f"Error parsing JSON: {e}")
+                    url = ""  # Fallback to empty string
+
                            
             elif "d1d34p8vz63oiq" in url or "sec1.pw.live" in url:
                 url = f"https://anonymouspwplayer-b99f57957198.herokuapp.com/pw?url={url}?token={raw_text4}"
@@ -1311,9 +1407,9 @@ async def text_handler(bot: Client, m: Message):
                 cmd = f'yt-dlp -f "{ytf}" "{url}" -o "{name}.mp4"'
 
             try:
-                cc = f'**🎞️ Title `{name} [{res}].mp4`\n\n🖇️LNK : <a href="{link}">Click Here</a>\n\n🎓 Uploaded By» {CREDIT}**'
-                cc1 = f'**📑 Title» `{name}`\n\n🖇️ LNK : <a href="{link}">Click Here</a>\n\n🎓 Uploaded By {CREDIT}**'
-                  
+                cc = f'**|🇮🇳| {cleaned_name1}\n\n😎 ℚ𝕦𝕒𝕝𝕚𝕥𝕪 ➠ {raw_text97}p\n\n🧿 𝐁𝐀𝐓𝐂𝐇 ➤ {b_name}\n\nChapterId > {raw_text65}**'
+                cc1 = f'**|🇮🇳| {cleaned_name1}\n\n🧿 𝐁𝐀𝐓𝐂𝐇 ➤ {b_name}\n\nChapterId > {raw_text65}**'
+                
                 if "drive" in url:
                     try:
                         ka = await helper.download(url, name)
